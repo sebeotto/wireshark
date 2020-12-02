@@ -49,6 +49,7 @@ static gint hf_pppoed_tag_vspec_tags = -1;
 static gint hf_pppoed_tag_vspec_tag = -1;
 static gint hf_pppoed_tag_vspec_circuit_id = -1;
 static gint hf_pppoed_tag_vspec_remote_id = -1;
+static gint hf_pppoed_tag_vspec_aa_circuit_id_binary = -1;
 static gint hf_pppoed_tag_vspec_act_data_rate_up = -1;
 static gint hf_pppoed_tag_vspec_act_data_rate_down = -1;
 static gint hf_pppoed_tag_vspec_min_data_rate_up = -1;
@@ -160,6 +161,7 @@ static gboolean global_pppoe_show_tags_and_lengths = FALSE;
 
 #define PPPOE_TAG_VSPEC_DSLF_CIRCUIT_ID                0x01
 #define PPPOE_TAG_VSPEC_DSLF_REMOTE_ID                 0x02
+#define PPPOE_TAG_VSPEC_DSLF_AA_CIRCUIT_ID_BINARY      0x06
 #define PPPOE_TAG_VSPEC_DSLF_ACT_DATA_RATE_UP          0x81
 #define PPPOE_TAG_VSPEC_DSLF_ACT_DATA_RATE_DOWN        0x82
 #define PPPOE_TAG_VSPEC_DSLF_MIN_DATA_RATE_UP          0x83
@@ -244,6 +246,7 @@ static const value_string tag_vals[] = {
 static const value_string vspec_tag_vals[] = {
 	{PPPOE_TAG_VSPEC_DSLF_CIRCUIT_ID,                "Circuit-ID"                    },
 	{PPPOE_TAG_VSPEC_DSLF_REMOTE_ID,                 "Remote-ID"                     },
+	{PPPOE_TAG_VSPEC_DSLF_AA_CIRCUIT_ID_BINARY,      "Access-Agg-Circuit-ID-Binary"  },
 	{PPPOE_TAG_VSPEC_DSLF_ACT_DATA_RATE_UP,          "Actual-Data-Rate-Up"           },
 	{PPPOE_TAG_VSPEC_DSLF_ACT_DATA_RATE_DOWN,        "Actual-Data-Rate-Down"         },
 	{PPPOE_TAG_VSPEC_DSLF_MIN_DATA_RATE_UP,          "Min-Data-Rate-Up"              },
@@ -359,6 +362,8 @@ dissect_pppoe_subtags_dslf(tvbuff_t *tvb, packet_info *pinfo _U_, int offset, pr
 						hf_pppoed_tag_vspec_circuit_id)
 				CASE_VSPEC_DSLF_TAG_STRING(PPPOE_TAG_VSPEC_DSLF_REMOTE_ID, <=, 63,
 						hf_pppoed_tag_vspec_remote_id)
+				CASE_VSPEC_DSLF_TAG_UINT(PPPOE_TAG_VSPEC_DSLF_AA_CIRCUIT_ID_BINARY, ==, 4,
+						hf_pppoed_tag_vspec_aa_circuit_id_binary)
 				CASE_VSPEC_DSLF_TAG_UINT(PPPOE_TAG_VSPEC_DSLF_ACT_DATA_RATE_UP, ==, 4,
 						hf_pppoed_tag_vspec_act_data_rate_up)
 				CASE_VSPEC_DSLF_TAG_UINT(PPPOE_TAG_VSPEC_DSLF_ACT_DATA_RATE_DOWN, ==, 4,
@@ -789,6 +794,11 @@ void proto_register_pppoed(void)
 		},
 		{ &hf_pppoed_tag_vspec_remote_id,
 		        { "Remote ID", "pppoed.tags.remote_id", FT_STRING, STR_ASCII,
+		                 NULL, 0x0, NULL, HFILL
+		        }
+		},
+		{ &hf_pppoed_tag_vspec_aa_circuit_id_binary,
+		        { "Access Aggregation Circuit ID Binary", "pppoed.tags.aa_circuit_id_binary", FT_UINT32, BASE_DEC,
 		                 NULL, 0x0, NULL, HFILL
 		        }
 		},
