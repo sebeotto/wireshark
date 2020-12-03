@@ -49,6 +49,7 @@ static gint hf_pppoed_tag_vspec_tags = -1;
 static gint hf_pppoed_tag_vspec_tag = -1;
 static gint hf_pppoed_tag_vspec_circuit_id = -1;
 static gint hf_pppoed_tag_vspec_remote_id = -1;
+static gint hf_pppoed_tag_vspec_aa_circuit_id_ascii = -1;
 static gint hf_pppoed_tag_vspec_aa_circuit_id_binary = -1;
 static gint hf_pppoed_tag_vspec_act_data_rate_up = -1;
 static gint hf_pppoed_tag_vspec_act_data_rate_down = -1;
@@ -68,6 +69,12 @@ static gint hf_pppoed_tag_vspec_access_loop_encapsulation = -1;
 static gint hf_pppoed_tag_vspec_access_loop_encap_data_link = -1;
 static gint hf_pppoed_tag_vspec_access_loop_encap_encap_1 = -1;
 static gint hf_pppoed_tag_vspec_access_loop_encap_encap_2 = -1;
+static gint hf_pppoed_tag_vspec_dsl_type = -1;
+static gint hf_pppoed_tag_vspec_pon_access_type = -1;
+static gint hf_pppoed_tag_vspec_ont_peak_data_rate_down = -1;
+static gint hf_pppoed_tag_vspec_ont_max_data_rate_up = -1;
+static gint hf_pppoed_tag_vspec_pon_tree_max_data_rate_up = -1;
+static gint hf_pppoed_tag_vspec_pon_tree_max_data_rate_down = -1;
 static gint hf_pppoed_tag_credits = -1;
 static gint hf_pppoed_tag_credits_fcn = -1;
 static gint hf_pppoed_tag_credits_bcn = -1;
@@ -161,6 +168,7 @@ static gboolean global_pppoe_show_tags_and_lengths = FALSE;
 
 #define PPPOE_TAG_VSPEC_DSLF_CIRCUIT_ID                0x01
 #define PPPOE_TAG_VSPEC_DSLF_REMOTE_ID                 0x02
+#define PPPOE_TAG_VSPEC_DSLF_AA_CIRCUIT_ID_ASCII       0x03
 #define PPPOE_TAG_VSPEC_DSLF_AA_CIRCUIT_ID_BINARY      0x06
 #define PPPOE_TAG_VSPEC_DSLF_ACT_DATA_RATE_UP          0x81
 #define PPPOE_TAG_VSPEC_DSLF_ACT_DATA_RATE_DOWN        0x82
@@ -177,6 +185,12 @@ static gboolean global_pppoe_show_tags_and_lengths = FALSE;
 #define PPPOE_TAG_VSPEC_DSLF_MAX_INT_DELAY_DOWN        0x8d
 #define PPPOE_TAG_VSPEC_DSLF_ACT_INT_DELAY_DOWN        0x8e
 #define PPPOE_TAG_VSPEC_DSLF_ACCESS_LOOP_ENCAPSULATION 0x90
+#define PPPOE_TAG_VSPEC_DSLF_DSL_TYPE                  0x91
+#define PPPOE_TAG_VSPEC_DSLF_PON_ACCESS_TYPE           0x92
+#define PPPOE_TAG_VSPEC_DSLF_ONT_PEAK_DATA_RATE_DOWN   0x94
+#define PPPOE_TAG_VSPEC_DSLF_ONT_MAX_DATA_RATE_UP      0x95
+#define PPPOE_TAG_VSPEC_DSLF_PON_TREE_MAX_DATA_RATE_UP 0x97
+#define PPPOE_TAG_VSPEC_DSLF_PON_TREE_MAX_DATA_RATE_DOWN 0x98
 
 #define PPPOE_TAG_VSPEC_DSLF_ACCESS_LOOP_ENCAP_DATA_LINK_ATM 0x00
 #define PPPOE_TAG_VSPEC_DSLF_ACCESS_LOOP_ENCAP_DATA_LINK_ETH 0x01
@@ -247,6 +261,7 @@ static const value_string vspec_tag_vals[] = {
 	{PPPOE_TAG_VSPEC_DSLF_CIRCUIT_ID,                "Circuit-ID"                    },
 	{PPPOE_TAG_VSPEC_DSLF_REMOTE_ID,                 "Remote-ID"                     },
 	{PPPOE_TAG_VSPEC_DSLF_AA_CIRCUIT_ID_BINARY,      "Access-Agg-Circuit-ID-Binary"  },
+	{PPPOE_TAG_VSPEC_DSLF_AA_CIRCUIT_ID_ASCII,       "Access-Agg-Circuit-ID-Ascii"   },
 	{PPPOE_TAG_VSPEC_DSLF_ACT_DATA_RATE_UP,          "Actual-Data-Rate-Up"           },
 	{PPPOE_TAG_VSPEC_DSLF_ACT_DATA_RATE_DOWN,        "Actual-Data-Rate-Down"         },
 	{PPPOE_TAG_VSPEC_DSLF_MIN_DATA_RATE_UP,          "Min-Data-Rate-Up"              },
@@ -262,6 +277,12 @@ static const value_string vspec_tag_vals[] = {
 	{PPPOE_TAG_VSPEC_DSLF_MAX_INT_DELAY_DOWN,        "Max-Interleaving-Delay-Down"   },
 	{PPPOE_TAG_VSPEC_DSLF_ACT_INT_DELAY_DOWN,        "Actual-Interleaving-Delay-Down"},
 	{PPPOE_TAG_VSPEC_DSLF_ACCESS_LOOP_ENCAPSULATION, "Access-Loop-Encapsulation"     },
+	{PPPOE_TAG_VSPEC_DSLF_DSL_TYPE,                  "Dsl-type"                      },
+	{PPPOE_TAG_VSPEC_DSLF_PON_ACCESS_TYPE,           "Pon-Access-Type"               },
+	{PPPOE_TAG_VSPEC_DSLF_ONT_PEAK_DATA_RATE_DOWN,   "ONT/ONU-Peak-Data-Rate-Down"   },
+	{PPPOE_TAG_VSPEC_DSLF_ONT_MAX_DATA_RATE_UP,      "ONT/ONU-Maximum-Data-Rate-Up"  },
+	{PPPOE_TAG_VSPEC_DSLF_PON_TREE_MAX_DATA_RATE_UP, "PON-Tree-Maximum-Data-Rate-Up" },
+	{PPPOE_TAG_VSPEC_DSLF_PON_TREE_MAX_DATA_RATE_DOWN,"PON-Tree-Maximum-Data-Rate-Down"},
 	{0,                                              NULL                            }
 };
 
@@ -362,6 +383,8 @@ dissect_pppoe_subtags_dslf(tvbuff_t *tvb, packet_info *pinfo _U_, int offset, pr
 						hf_pppoed_tag_vspec_circuit_id)
 				CASE_VSPEC_DSLF_TAG_STRING(PPPOE_TAG_VSPEC_DSLF_REMOTE_ID, <=, 63,
 						hf_pppoed_tag_vspec_remote_id)
+				CASE_VSPEC_DSLF_TAG_UINT(PPPOE_TAG_VSPEC_DSLF_AA_CIRCUIT_ID_ASCII, <=, 63,
+						hf_pppoed_tag_vspec_aa_circuit_id_ascii)
 				CASE_VSPEC_DSLF_TAG_UINT(PPPOE_TAG_VSPEC_DSLF_AA_CIRCUIT_ID_BINARY, ==, 4,
 						hf_pppoed_tag_vspec_aa_circuit_id_binary)
 				CASE_VSPEC_DSLF_TAG_UINT(PPPOE_TAG_VSPEC_DSLF_ACT_DATA_RATE_UP, ==, 4,
@@ -407,6 +430,18 @@ dissect_pppoe_subtags_dslf(tvbuff_t *tvb, packet_info *pinfo _U_, int offset, pr
 							tvb, tagstart+4, 1, ENC_BIG_ENDIAN);
 
 					break;
+				CASE_VSPEC_DSLF_TAG_UINT(PPPOE_TAG_VSPEC_DSLF_DSL_TYPE, ==, 4,
+						hf_pppoed_tag_vspec_dsl_type)
+				CASE_VSPEC_DSLF_TAG_UINT(PPPOE_TAG_VSPEC_DSLF_PON_ACCESS_TYPE, ==, 4,
+						hf_pppoed_tag_vspec_pon_access_type)
+				CASE_VSPEC_DSLF_TAG_UINT(PPPOE_TAG_VSPEC_DSLF_ONT_PEAK_DATA_RATE_DOWN, ==, 4,
+						hf_pppoed_tag_vspec_ont_peak_data_rate_down)
+				CASE_VSPEC_DSLF_TAG_UINT(PPPOE_TAG_VSPEC_DSLF_ONT_MAX_DATA_RATE_UP, ==, 4,
+						hf_pppoed_tag_vspec_ont_max_data_rate_up)
+				CASE_VSPEC_DSLF_TAG_UINT(PPPOE_TAG_VSPEC_DSLF_PON_TREE_MAX_DATA_RATE_UP, ==, 4,
+						hf_pppoed_tag_vspec_pon_tree_max_data_rate_up)
+				CASE_VSPEC_DSLF_TAG_UINT(PPPOE_TAG_VSPEC_DSLF_PON_TREE_MAX_DATA_RATE_DOWN, ==, 4,
+						hf_pppoed_tag_vspec_pon_tree_max_data_rate_down)
 				default:
 					if (poe_tag_length > 0 )
 					{
@@ -418,7 +453,7 @@ dissect_pppoe_subtags_dslf(tvbuff_t *tvb, packet_info *pinfo _U_, int offset, pr
 							proto_tree_add_item(pppoe_tree, hf_pppoed_tag_length_8, tvb, tagstart+1, 1, ENC_BIG_ENDIAN);
 						}
 						proto_tree_add_item(pppoe_tree, hf_pppoed_tag_unknown_data, tvb,
-								tagstart+1, poe_tag_length, ENC_NA);
+								tagstart+2, poe_tag_length, ENC_NA);
 					}
 			}
 
@@ -797,6 +832,11 @@ void proto_register_pppoed(void)
 		                 NULL, 0x0, NULL, HFILL
 		        }
 		},
+		{ &hf_pppoed_tag_vspec_aa_circuit_id_ascii,
+		        { "Access Aggregation Circuit ID ASCII", "pppoed.tags.aa_circuit_id_ascii", FT_STRING, STR_ASCII,
+		                 NULL, 0x0, NULL, HFILL
+		        }
+		},
 		{ &hf_pppoed_tag_vspec_aa_circuit_id_binary,
 		        { "Access Aggregation Circuit ID Binary", "pppoed.tags.aa_circuit_id_binary", FT_UINT32, BASE_DEC,
 		                 NULL, 0x0, NULL, HFILL
@@ -891,6 +931,36 @@ void proto_register_pppoed(void)
 			{ "Encaps 1", "pppoed.tags.access_loop_encap.encap_2", FT_UINT8, BASE_HEX,
 				 VALS(vspec_tag_dslf_access_loop_encap_encap_2_vals), 0x0, NULL, HFILL
 			}
+		},
+		{ &hf_pppoed_tag_vspec_dsl_type,
+		        { "Dsl type", "pppoed.tags.dsl_type", FT_UINT32, BASE_DEC,
+		                 NULL, 0x0, NULL, HFILL
+		        }
+		},
+		{ &hf_pppoed_tag_vspec_pon_access_type,
+		        { "Pon Access Type", "pppoed.tags.pon_access_type", FT_UINT32, BASE_DEC,
+		                 NULL, 0x0, NULL, HFILL
+		        }
+		},
+		{ &hf_pppoed_tag_vspec_ont_peak_data_rate_down,
+		        { "Ont Peak Data Rate Downstream", "pppoed.tags.ont_peak_data_rate_down", FT_UINT32, BASE_DEC,
+		                 NULL, 0x0, NULL, HFILL
+		        }
+		},
+		{ &hf_pppoed_tag_vspec_ont_max_data_rate_up,
+		        { "Ont Max Data Rate Upstream", "pppoed.tags.ont_max_data_rate_up", FT_UINT32, BASE_DEC,
+		                 NULL, 0x0, NULL, HFILL
+		        }
+		},
+		{ &hf_pppoed_tag_vspec_pon_tree_max_data_rate_up,
+		        { "Pon Tree Max Data Rate Upstream", "pppoed.tags.pon_tree_max_data_rate_up", FT_UINT32, BASE_DEC,
+		                 NULL, 0x0, NULL, HFILL
+		        }
+		},
+		{ &hf_pppoed_tag_vspec_pon_tree_max_data_rate_down,
+		        { "Pon Tree Max Data Rate Downstream", "pppoed.tags.pon_tree_max_data_rate_down", FT_UINT32, BASE_DEC,
+		                 NULL, 0x0, NULL, HFILL
+		        }
 		},
 		{ &hf_pppoed_tag_credits,
 			{ "Credits", "pppoed.tags.credits", FT_BYTES, BASE_NONE,
