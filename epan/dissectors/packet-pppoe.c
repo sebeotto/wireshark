@@ -312,6 +312,28 @@ static const value_string vspec_tag_dslf_access_loop_encap_encap_2_vals[] = {
 	{0,                                                     NULL                               }
 };
 
+static const value_string vspec_tag_dslf_dsl_type_vals[] = {
+	{0, "OTHER"  },
+	{1, "ADSL1"  },
+	{2, "ADSL2"  },
+	{3, "ADSL2+" },
+	{4, "VDSL1"  },
+	{5, "VDSL2"  },
+	{6, "SDSL"   },
+	{99, NULL    }
+};
+
+static const value_string vspec_tag_dslf_pon_access_type_vals[] = {
+	{0, "OTHER"    },
+	{1, "GPON"     },
+	{2, "XG-PON1"  },
+	{3, "TWDM-PON" },
+	{4, "XGS-PON"  },
+	{5, "WDM-PON"  },
+	{7, "Unknown"  },
+	{99, NULL      }
+};
+
 static const value_string datarate_scale_vals[] = {
 	{PPPOE_SCALE_KBPS,	"kilobits per second"},
 	{PPPOE_SCALE_MBPS,	"megabits per second"},
@@ -934,32 +956,32 @@ void proto_register_pppoed(void)
 		},
 		{ &hf_pppoed_tag_vspec_dsl_type,
 		        { "Dsl type", "pppoed.tags.dsl_type", FT_UINT32, BASE_DEC,
-		                 NULL, 0x0, NULL, HFILL
+		            VALS(vspec_tag_dslf_dsl_type_vals), 0x0, NULL, HFILL
 		        }
 		},
 		{ &hf_pppoed_tag_vspec_pon_access_type,
 		        { "Pon Access Type", "pppoed.tags.pon_access_type", FT_UINT32, BASE_DEC,
-		                 NULL, 0x0, NULL, HFILL
+		            VALS(vspec_tag_dslf_pon_access_type_vals), 0x0, "bla", HFILL
 		        }
 		},
 		{ &hf_pppoed_tag_vspec_ont_peak_data_rate_down,
-		        { "Ont Peak Data Rate Downstream", "pppoed.tags.ont_peak_data_rate_down", FT_UINT32, BASE_DEC,
-		                 NULL, 0x0, NULL, HFILL
+		        { "Ont Peak Data Rate Downstream", "pppoed.tags.ont_peak_data_rate_down", FT_UINT32, BASE_DEC|BASE_UNIT_STRING, 
+		                 &units_kbps, 0x0, NULL, HFILL
 		        }
 		},
 		{ &hf_pppoed_tag_vspec_ont_max_data_rate_up,
-		        { "Ont Max Data Rate Upstream", "pppoed.tags.ont_max_data_rate_up", FT_UINT32, BASE_DEC,
-		                 NULL, 0x0, NULL, HFILL
+		        { "Ont Max Data Rate Upstream", "pppoed.tags.ont_max_data_rate_up", FT_UINT32, BASE_DEC|BASE_UNIT_STRING, 
+		                 &units_kbps, 0x0, NULL, HFILL
 		        }
 		},
 		{ &hf_pppoed_tag_vspec_pon_tree_max_data_rate_up,
-		        { "Pon Tree Max Data Rate Upstream", "pppoed.tags.pon_tree_max_data_rate_up", FT_UINT32, BASE_DEC,
-		                 NULL, 0x0, NULL, HFILL
+		        { "Pon Tree Max Data Rate Upstream", "pppoed.tags.pon_tree_max_data_rate_up", FT_UINT32, BASE_DEC|BASE_UNIT_STRING, 
+		                 &units_kbps, 0x0, NULL, HFILL
 		        }
 		},
 		{ &hf_pppoed_tag_vspec_pon_tree_max_data_rate_down,
-		        { "Pon Tree Max Data Rate Downstream", "pppoed.tags.pon_tree_max_data_rate_down", FT_UINT32, BASE_DEC,
-		                 NULL, 0x0, NULL, HFILL
+		        { "Pon Tree Max Data Rate Downstream", "pppoed.tags.pon_tree_max_data_rate_down", FT_UINT32, BASE_DEC|BASE_UNIT_STRING, 
+		                 &units_kbps , 0x0, NULL, HFILL
 		        }
 		},
 		{ &hf_pppoed_tag_credits,
