@@ -466,6 +466,10 @@ static int hf_dhcp_option82_vrf_name_vpn_id_index = -1;
 									/* 82:151 suboptions end */
 static int hf_dhcp_option82_server_id_override_cisco = -1;		/* 82:152 */
 
+static int hf_dhcp_option82_adtran_tlv_str = -1;
+static int hf_dhcp_option82_adtran_tlv_hex = -1;
+static int hf_dhcp_option82_adtran_tlv_dec = -1;
+
 static int hf_dhcp_option_isns_functions = -1;
 static int hf_dhcp_option_isns_functions_enabled = -1;
 static int hf_dhcp_option_isns_functions_dd_authorization = -1;
@@ -654,6 +658,7 @@ static gint ett_dhcp_option63_suboption = -1;
 static gint ett_dhcp_option77_instance = -1;
 static gint ett_dhcp_option82_suboption = -1;
 static gint ett_dhcp_option82_suboption9 = -1;
+static gint ett_dhcp_option82_suboption9_adtran_tlv = -1;
 static gint ett_dhcp_option125_suboption = -1;
 static gint ett_dhcp_option125_tr111_suboption = -1;
 static gint ett_dhcp_option125_cl_suboption = -1;
@@ -3337,8 +3342,8 @@ dhcp_dhcp_decode_agent_info(packet_info *pinfo, proto_item *v_ti, proto_tree *v_
 	guint8	    subopt, idx, vs_opt, vs_len;
 	int	    subopt_len, subopt_end, datalen;
 	guint32	    enterprise;
-	proto_item *vti, *ti;
-	proto_tree *o82_v_tree, *o82_sub_tree;
+	proto_item *vti, *ti, *ti_adtran_tlv;
+	proto_tree *o82_v_tree, *o82_sub_tree, *o82_sub_tree_adtran_tlv;
 	guint8	    tag, tag_len;
 
 	struct basic_types_hfs default_hfs = {
@@ -3469,6 +3474,36 @@ dhcp_dhcp_decode_agent_info(packet_info *pinfo, proto_item *v_ti, proto_tree *v_
 							expert_add_info_format(pinfo, vti, &ei_dhcp_suboption_invalid, "Invalid suboption %d (%d bytes)", vs_opt, vs_len);
 							suboptoff += vs_len;
 							break;
+						}
+					case 3561: /* Adtran */
+						while(datalen > 0) {
+							vs_opt = tvb_get_guint8(tvb, suboptoff);
+							suboptoff++;
+							vs_len = tvb_get_guint8(tvb, suboptoff);
+							suboptoff++;
+							datalen = datalen - vs_len - 2;
+							switch (vs_opt) {
+                                                                case 0x03:
+                                                                        ti_adtran_tlv = proto_tree_add_item(vti, hf_dhcp_option82_adtran_tlv_str, tvb, suboptoff, vs_len, ENC_BIG_ENDIAN); // tlv item
+                                                                        o82_sub_tree_adtran_tlv = proto_item_add_subtree(ti_adtran_tlv, ett_dhcp_option82_suboption9_adtran_tlv); // tlv tree
+                                                                        proto_tree_add_item(o82_sub_tree_adtran_tlv, hf_dhcp_option82_vi_cl_tag,        tvb, suboptoff-2, 1, ENC_BIG_ENDIAN);
+                                                                        proto_tree_add_item(o82_sub_tree_adtran_tlv, hf_dhcp_option82_vi_cl_tag_length, tvb, suboptoff-1, 1, ENC_BIG_ENDIAN);
+                                                                        proto_tree_add_item(o82_sub_tree_adtran_tlv, hf_dhcp_option82_adtran_tlv_str, tvb, suboptoff, vs_len, ENC_BIG_ENDIAN);
+                                                                        suboptoff += vs_len;
+                                                                        break;
+                                                                case 0x82:
+                                                                        ti_adtran_tlv = proto_tree_add_item(vti, hf_dhcp_option82_adtran_tlv_dec, tvb, suboptoff, vs_len, ENC_BIG_ENDIAN); // tlv item
+                                                                        o82_sub_tree_adtran_tlv = proto_item_add_subtree(ti_adtran_tlv, ett_dhcp_option82_suboption9_adtran_tlv); // tlv tree
+                                                                        proto_tree_add_item(o82_sub_tree_adtran_tlv, hf_dhcp_option82_vi_cl_tag,        tvb, suboptoff-2, 1, ENC_BIG_ENDIAN);
+                                                                        proto_tree_add_item(o82_sub_tree_adtran_tlv, hf_dhcp_option82_vi_cl_tag_length, tvb, suboptoff-1, 1, ENC_BIG_ENDIAN);
+                                                                        proto_tree_add_item(o82_sub_tree_adtran_tlv, hf_dhcp_option82_adtran_tlv_dec, tvb, suboptoff, vs_len, ENC_BIG_ENDIAN);
+                                                                        suboptoff += vs_len;
+									break;
+								default:
+									expert_add_info_format(pinfo, vti, &ei_dhcp_suboption_invalid, "Invalid suboption %d (%d bytes)", vs_opt, vs_len);
+									suboptoff += vs_len;
+									break;
+							}
 						}
 						break;
 					default:
@@ -9145,6 +9180,23 @@ proto_register_dhcp(void)
 		    "Option 82:152 Server ID Override (Cisco proprietary)", HFILL }},
 
 
+
+		{ &hf_dhcp_option82_adtran_tlv_str, { "Data", "dhcp.option.agent_information_option.vi.cl.enterprise.option", FT_STRING, BASE_NONE, NULL, 0x0, "Option 82:9 VI CL Option", HFILL }},
+
+
+		{ &hf_dhcp_option82_adtran_tlv_dec,
+		  { "Data", "dhcp.option.agent_information_option.vi.cl.enterprise.option",
+		    FT_UINT32, BASE_DEC, NULL, 0x0,
+		    "Option 82:9 VI CL Option", HFILL }},
+
+		{ &hf_dhcp_option82_adtran_tlv_hex,
+		  { "Data", "dhcp.option.agent_information_option.vi.cl.option",
+		    FT_UINT32, BASE_HEX, NULL, 0x0,
+		    "Option 82:9 VI CL Option", HFILL }},
+
+
+
+
 		{ &hf_dhcp_option_isns_functions,
 		  { "iSNS Functions", "dhcp.option.isns.functions",
 		    FT_UINT16, BASE_HEX, NULL, 0x00,
@@ -10110,6 +10162,7 @@ proto_register_dhcp(void)
 		&ett_dhcp_o43_bsdp_image_desc,
 		&ett_dhcp_o43_bsdp_attributes_flags,
 		&ett_dhcp_option158_pcp_list,
+		&ett_dhcp_option82_suboption9_adtran_tlv,
 	};
 
 	static ei_register_info ei[] = {
